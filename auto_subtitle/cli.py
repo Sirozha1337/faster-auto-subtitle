@@ -14,6 +14,12 @@ def main():
                         help="generate subtitles for a specific fragment of the video (e.g. 01:02:05-01:03:45)")
     parser.add_argument("--model", default="small",
                         choices=available_models(), help="name of the Whisper model to use")
+    parser.add_argument("--device", type=str, default="auto", choices=[
+                        "cpu", "cuda", "auto"], help="Device to use for computation (\"cpu\", \"cuda\", \"auto\")")
+    parser.add_argument("--compute_type", type=str, default="default", choices=[
+                        "int8", "int8_float32", "int8_float16",
+                        "int8_bfloat16", "int16", "float16",
+                        "bfloat16", "float32"], help="Type to use for computation. See https://opennmt.net/CTranslate2/quantization.html.")
     parser.add_argument("--output_dir", "-o", type=str,
                         default=".", help="directory to save the outputs")
     parser.add_argument("--output_srt", type=str2bool, default=False,

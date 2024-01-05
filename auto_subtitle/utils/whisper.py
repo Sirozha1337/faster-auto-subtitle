@@ -3,8 +3,8 @@ import faster_whisper
 from tqdm import tqdm
 
 class WhisperAI:
-    def __init__(self, model_name, model_args):
-        self.model = faster_whisper.WhisperModel(model_name, device="cuda", compute_type="float16")
+    def __init__(self, model_name, device, compute_type, model_args):
+        self.model = faster_whisper.WhisperModel(model_name, device=device, compute_type=compute_type)
         self.model_args = model_args
 
     def transcribe(self, audio_path):
@@ -18,3 +18,4 @@ class WhisperAI:
             for segment in segments:
                 yield segment
                 pbar.update(segment.end - segment.start)
+            pbar.update(0)
