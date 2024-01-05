@@ -7,9 +7,9 @@ def str2bool(string: str):
 
     if string in str2val:
         return str2val[string]
-    else:
-        raise ValueError(
-            f"Expected one of {set(str2val.keys())}, got {string}")
+
+    raise ValueError(
+        f"Expected one of {set(str2val.keys())}, got {string}")
 
 
 def str2timeinterval(string: str):
@@ -36,7 +36,7 @@ def str2timeinterval(string: str):
 
 def time_to_timestamp(string: str):
     split_time = string.split(':')
-    if len(split_time) == 0 or len(split_time) > 3 or not all([x.isdigit() for x in split_time]):
+    if len(split_time) == 0 or len(split_time) > 3 or not all(x.isdigit() for x in split_time):
         raise ValueError(
             f"Expected HH:mm:ss or HH:mm or ss, got {string}")
 
