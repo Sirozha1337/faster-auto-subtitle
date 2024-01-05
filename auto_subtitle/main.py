@@ -5,6 +5,7 @@ from .utils.files import filename, write_srt
 from .utils.ffmpeg import get_audio, overlay_subtitles
 from .utils.whisper import WhisperAI
 
+
 def process(args: dict):
     model_name: str = args.pop("model")
     output_dir: str = args.pop("output_dir")
@@ -12,9 +13,7 @@ def process(args: dict):
     srt_only: bool = args.pop("srt_only")
     language: str = args.pop("language")
     sample_interval: str = args.pop("sample_interval")
-    device: str = args.pop("device")
-    compute_type: str = args.pop("compute_type")
-    
+
     os.makedirs(output_dir, exist_ok=True)
 
     if model_name.endswith(".en"):
@@ -25,18 +24,26 @@ def process(args: dict):
     elif language != "auto":
         args["language"] = language
 
-    audios = get_audio(args.pop("video"), args.pop('audio_channel'), sample_interval)
-    subtitles = get_subtitles(
-        audios, output_srt or srt_only, output_dir, model_name, device, compute_type, args
-    )
+    audios = get_audio(args.pop("video"), args.pop(
+        'audio_channel'), sample_interval)
+
+    model_args = {}
+    model_args["model_size_or_path"] = model_name
+    model_args["device"] = args.pop("device")
+    model_args["compute_type"] = args.pop("compute_type")
+
+    srt_output_dir = output_dir if output_srt or srt_only else tempfile.gettempdir()
+    subtitles = get_subtitles(audios, srt_output_dir, model_args, args)
 
     if srt_only:
         return
 
     overlay_subtitles(subtitles, output_dir, sample_interval)
 
-def get_subtitles(audio_paths: list, output_srt: bool, output_dir: str, model_name: str, device: str, compute_type: str, model_args: dict):
-    model = WhisperAI(model_name, device, compute_type, model_args)
+
+def get_subtitles(audio_paths: list, output_dir: str,
+                  model_args: dict, transcribe_args: dict):
+    model = WhisperAI(model_args, transcribe_args)
 
     subtitles_path = {}
 
@@ -44,9 +51,8 @@ def get_subtitles(audio_paths: list, output_srt: bool, output_dir: str, model_na
         print(
             f"Generating subtitles for {filename(path)}... This might take a while."
         )
-        srt_path = output_dir if output_srt else tempfile.gettempdir()
-        srt_path = os.path.join(srt_path, f"{filename(path)}.srt")
-        
+        srt_path = os.path.join(output_dir, f"{filename(path)}.srt")
+
         segments = model.transcribe(audio_path)
 
         with open(srt_path, "w", encoding="utf-8") as srt:

@@ -13,5 +13,5 @@ def write_srt(transcript: Iterator[dict], file: TextIO):
             flush=True,
         )
 
-def filename(path):
+def filename(path: str):
     return os.path.splitext(os.path.basename(path))[0]
