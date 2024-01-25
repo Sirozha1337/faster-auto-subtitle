@@ -6,7 +6,9 @@ This repository uses `ffmpeg` and [OpenAI's Whisper](https://openai.com/blog/whi
 
 ## Installation
 
-To get started, you'll need Python 3.7 or newer. Install the binary by running the following command:
+To get started, you'll need Python 3.9 or newer. Install the binary by running the following command:
+    
+    pip install wheel
 
     pip install git+https://github.com/Sirozha1337/faster-auto-subtitle.git@dev
 
@@ -37,6 +39,12 @@ Adding `--task translate` will translate the subtitles into English:
 
     faster_auto_subtitle /path/to/video.mp4 --task translate
 
+Adding `--target_language {2-letter-language-code}` will translate the subtitles into specified language using [Opus-MT](https://github.com/Helsinki-NLP/Opus-MT):
+
+    faster_auto_subtitle /path/to/video.mp4 --target_language fr
+
+This will require downloading the appropriate model. If direct translation is not available it will attempt translation from source to english and from english to source.
+
 Run the following to view all available options:
 
     faster_auto_subtitle --help
@@ -49,7 +57,7 @@ Higher `beam_size` usually leads to greater accuracy, but slows down the process
 
 Setting higher `no_speech_threshold` could be useful for videos with a lot of background noise to stop Whisper from "hallucinating" subtitles for it.
 
-In my experience settings option `condition_on_previous_text` to `False` dramatically increases accurracy for videos like TV Shows with an intro song at the start. 
+In my experience settings option `condition_on_previous_text` to `False` dramatically increases accurracy for videos like TV Shows with an intro song at the start.
 
 You can use `sample_interval` parameter to generate subtitles for a portion of the video to play around with those parameters:
 

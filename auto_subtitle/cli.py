@@ -46,11 +46,16 @@ def main():
     parser.add_argument("--task", type=str, default="transcribe",
                         choices=["transcribe", "translate"],
                         help="whether to perform X->X speech recognition ('transcribe') \
-                              or X->English translation ('translate')")
+                              or X->Language translation ('translate')")
     parser.add_argument("--language", type=str, default="auto",
                         choices=LANGUAGE_CODES,
                         help="What is the origin language of the video? \
                               If unset, it is detected automatically.")
+    parser.add_argument("--target_language", type=str, default="en",
+                        choices=LANGUAGE_CODES,
+                        help="Desired language to translate subtitles to. \
+                              If language is not en, Opus-MT will be used. \
+                              See https://github.com/Helsinki-NLP/Opus-MT.")
 
     args = parser.parse_args().__dict__
 

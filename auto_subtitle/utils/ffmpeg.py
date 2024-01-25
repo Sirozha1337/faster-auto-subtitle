@@ -2,7 +2,7 @@ import os
 import tempfile
 import ffmpeg
 from .mytempfile import MyTempFile
-from .files import filename
+from .files import filename, write_srt
 
 
 def get_audio(paths: list, audio_channel_index: int, sample_interval: list):
@@ -38,7 +38,7 @@ def get_audio(paths: list, audio_channel_index: int, sample_interval: list):
 
 
 def overlay_subtitles(subtitles: dict, output_dir: str, sample_interval: list):
-    for path, srt_path in subtitles.items():
+    for path, subtitle in subtitles.items():
         out_path = os.path.join(output_dir, f"{filename(path)}.mp4")
 
         print(f"Adding subtitles to {filename(path)}...")
@@ -55,7 +55,9 @@ def overlay_subtitles(subtitles: dict, output_dir: str, sample_interval: list):
         # HACK: On Windows it's impossible to use absolute subtitle file path with ffmpeg
         # so we use temp copy instead
         # see: https://github.com/kkroening/ffmpeg-python/issues/745
-        with MyTempFile(srt_path) as srt_temp:
+        with MyTempFile(subtitle['output_path'] if 'output_path' in subtitle else None) as srt_temp:
+            write_srt(subtitle['segments'], srt_temp.tmp_file)
+
             video = ffmpeg.input(path, **ffmpeg_input_args)
             audio = video.audio
 

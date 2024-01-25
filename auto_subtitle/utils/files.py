@@ -2,6 +2,7 @@ import os
 from typing import Iterator, TextIO
 from .convert import format_timestamp
 
+
 def write_srt(transcript: Iterator[dict], file: TextIO):
     for i, segment in enumerate(transcript, start=1):
         print(
@@ -12,6 +13,7 @@ def write_srt(transcript: Iterator[dict], file: TextIO):
             file=file,
             flush=True,
         )
+
 
 def filename(path: str):
     return os.path.splitext(os.path.basename(path))[0]

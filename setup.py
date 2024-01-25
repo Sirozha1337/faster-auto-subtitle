@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    version="1.0",
+    version="1.1",
     name="faster_auto_subtitle",
     packages=find_packages(),
     py_modules=["auto_subtitle"],
@@ -9,7 +9,10 @@ setup(
     install_requires=[
         'faster-whisper',
         'tqdm',
-        'ffmpeg-python'
+        'ffmpeg-python',
+        'fasttext',
+        'EasyNMT',
+        'langcodes',
     ],
     description="Automatically generate and embed subtitles into your videos",
     entry_points={

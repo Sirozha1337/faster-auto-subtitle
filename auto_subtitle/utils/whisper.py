@@ -2,7 +2,7 @@ import warnings
 import faster_whisper
 from tqdm import tqdm
 
-# pylint: disable=R0903
+
 class WhisperAI:
     """
     Wrapper class for the Whisper speech recognition model with additional functionality.
@@ -52,9 +52,13 @@ class WhisperAI:
         - faster_whisper.TranscriptionSegment: An individual transcription segment.
         """
         warnings.filterwarnings("ignore")
-        segments, info = self.model.transcribe(audio_path, **self.transcribe_args)
+        segments, info = self.model.transcribe(
+            audio_path, **self.transcribe_args)
         warnings.filterwarnings("default")
 
+        return (self.subtitles_iterator(segments, info), info)
+
+    def subtitles_iterator(self, segments, info):
         # Same precision as the Whisper timestamps.
         total_duration = round(info.duration, 2)
 
