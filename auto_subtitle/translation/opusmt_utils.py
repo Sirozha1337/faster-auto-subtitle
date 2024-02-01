@@ -25,7 +25,7 @@ class OpusMT:
             self.models[model_name]['last_loaded'] = time.time()
             return self.models[model_name]['tokenizer'], self.models[model_name]['model']
 
-        logger.info("Load model: {model_name}" % model_name)
+        logger.info("Load model: %s" % model_name)
         tokenizer = MarianTokenizer.from_pretrained(model_name)
         model = MarianMTModel.from_pretrained(model_name)
         model.eval()
@@ -47,7 +47,7 @@ class OpusMT:
         if self.available_models is not None:
             return
 
-        print('Loading a list of available language models from OPUS-NT')
+        logger.info('Loading a list of available language models from OPUS-NT')
         model_list = list_models(
             filter=ModelFilter(
                 author=NLP_ROOT
@@ -73,21 +73,21 @@ class OpusMT:
     def determine_required_translations(self, source_lang, target_lang):
         direct_key = f'{source_lang}-{target_lang}'
         if direct_key in self.available_models:
-            print(
+            logger.info(
                 f'Found direct translation from {source_lang} to {target_lang}.')
             return [(source_lang, target_lang, direct_key)]
 
-        print(
+        logger.info(
             f'No direct translation from {source_lang} to {target_lang}. Trying to translate through en.')
 
         to_en_key = f'{source_lang}-en'
         if to_en_key not in self.available_models:
-            print(f'No translation from {source_lang} to en.')
+            logger.info(f'No translation from {source_lang} to en.')
             return []
 
         from_en_key = f'en-{target_lang}'
         if from_en_key not in self.available_models:
-            print(f'No translation from en to {target_lang}.')
+            logger.info(f'No translation from en to {target_lang}.')
             return []
 
         return [(source_lang, 'en', to_en_key), ('en', target_lang, from_en_key)]

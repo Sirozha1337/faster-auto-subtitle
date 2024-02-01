@@ -56,9 +56,10 @@ class WhisperAI:
             audio_path, **self.transcribe_args)
         warnings.filterwarnings("default")
 
-        return (self.subtitles_iterator(segments, info), info)
+        return self.subtitles_iterator(segments, info), info
 
-    def subtitles_iterator(self, segments, info):
+    @staticmethod
+    def subtitles_iterator(segments, info):
         # Same precision as the Whisper timestamps.
         total_duration = round(info.duration, 2)
 
