@@ -25,7 +25,7 @@ class OpusMT:
             self.models[model_name]['last_loaded'] = time.time()
             return self.models[model_name]['tokenizer'], self.models[model_name]['model']
 
-        logger.info("Load model: %s" % model_name)
+        logger.info("Load model: %s", model_name)
         tokenizer = MarianTokenizer.from_pretrained(model_name)
         model = MarianMTModel.from_pretrained(model_name)
         model.eval()
@@ -74,25 +74,27 @@ class OpusMT:
         direct_key = f'{source_lang}-{target_lang}'
         if direct_key in self.available_models:
             logger.info(
-                f'Found direct translation from {source_lang} to {target_lang}.')
+                'Found direct translation from %s to %s.', source_lang, target_lang)
             return [(source_lang, target_lang, direct_key)]
 
         logger.info(
-            f'No direct translation from {source_lang} to {target_lang}. Trying to translate through en.')
+            'No direct translation from %s to %s. Trying to translate through en.', source_lang,
+            target_lang)
 
         to_en_key = f'{source_lang}-en'
         if to_en_key not in self.available_models:
-            logger.info(f'No translation from {source_lang} to en.')
+            logger.info('No translation from %s to en.', source_lang)
             return []
 
         from_en_key = f'en-{target_lang}'
         if from_en_key not in self.available_models:
-            logger.info(f'No translation from en to {target_lang}.')
+            logger.info('No translation from en to %s.', target_lang)
             return []
 
         return [(source_lang, 'en', to_en_key), ('en', target_lang, from_en_key)]
 
-    def translate_sentences(self, sentences: List[str], source_lang: str, target_lang: str, device: str, beam_size: int = 5, **kwargs):
+    def translate_sentences(self, sentences: List[str], source_lang: str, target_lang: str,
+                            device: str, beam_size: int = 5, **kwargs):
         self.load_available_models()
 
         translations = self.determine_required_translations(

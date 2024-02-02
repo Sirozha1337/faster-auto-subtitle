@@ -4,7 +4,7 @@ from faster_whisper.transcribe import Segment
 from .convert import format_timestamp
 
 
-def write_srt(transcript: list[Segment], file: TextIO):
+def write_srt(transcript: list[Segment], file: TextIO) -> None:
     for i, segment in enumerate(transcript, start=1):
         print(
             f"{i}\n"
@@ -16,5 +16,5 @@ def write_srt(transcript: list[Segment], file: TextIO):
         )
 
 
-def filename(path: str):
+def filename(path: str) -> str:
     return os.path.splitext(os.path.basename(path))[0]

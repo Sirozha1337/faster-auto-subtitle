@@ -1,6 +1,7 @@
 import tempfile
 import os
 import shutil
+from typing import TextIO, cast
 from auto_subtitle.models.Subtitles import Subtitles
 from auto_subtitle.utils.files import write_srt
 
@@ -21,12 +22,12 @@ class SubtitlesTempFile:
         if self.subtitles.output_path is not None and os.path.isfile(self.subtitles.output_path):
             shutil.copyfile(self.subtitles.output_path, self.tmp_file_path)
         else:
-            write_srt(self.subtitles.segments, self.tmp_file)
+            write_srt(self.subtitles.segments, cast(TextIO, self.tmp_file))
         return self
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+    def __exit__(self, exc_type, exc_value, exc_traceback) -> None:
         if self.subtitles is None:
-            return self
+            return
 
         self.tmp_file.close()
         if os.path.isfile(self.tmp_file_path):

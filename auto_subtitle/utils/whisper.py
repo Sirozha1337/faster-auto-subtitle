@@ -1,5 +1,7 @@
 import warnings
-import faster_whisper
+from typing import Iterable
+from faster_whisper import WhisperModel
+from faster_whisper.transcribe import Segment, TranscriptionInfo
 from tqdm import tqdm
 
 
@@ -38,10 +40,10 @@ class WhisperAI:
     """
 
     def __init__(self, model_args: dict, transcribe_args: dict):
-        self.model = faster_whisper.WhisperModel(**model_args)
+        self.model = WhisperModel(**model_args)
         self.transcribe_args = transcribe_args
 
-    def transcribe(self, audio_path: str):
+    def transcribe(self, audio_path: str) -> tuple[Iterable[Segment], TranscriptionInfo]:
         """
         Transcribes the specified audio file and yields the resulting segments.
 
@@ -59,7 +61,8 @@ class WhisperAI:
         return self.subtitles_iterator(segments, info), info
 
     @staticmethod
-    def subtitles_iterator(segments, info):
+    def subtitles_iterator(segments: Iterable[Segment],
+                           info: TranscriptionInfo) -> Iterable[Segment]:
         # Same precision as the Whisper timestamps.
         total_duration = round(info.duration, 2)
 

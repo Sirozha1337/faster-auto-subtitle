@@ -1,20 +1,21 @@
 import os
 import tempfile
-import ffmpeg
 import logging
+from typing import Optional
+import ffmpeg
 from .tempfile import SubtitlesTempFile
 from .files import filename
 from ..models.Subtitles import Subtitles
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
 
-def get_audio(path: str, audio_channel_index: int, sample_interval: list):
+def get_audio(path: str, audio_channel_index: int, sample_interval: list) -> str:
     temp_dir = tempfile.gettempdir()
 
-    logger.info(f"Extracting audio from {filename(path)}...")
-    output_path = os.path.join(temp_dir, f"{filename(path)}.wav")
+    file_name = filename(path)
+    logger.info("Extracting audio from %s...", file_name)
+    output_path = os.path.join(temp_dir, f"{file_name}.wav")
 
     ffmpeg_input_args = {}
     if sample_interval is not None:
@@ -39,10 +40,11 @@ def get_audio(path: str, audio_channel_index: int, sample_interval: list):
 
 
 def add_subtitles(path: str, transcribed: Subtitles, translated: Optional[Subtitles],
-                  output_dir: str, sample_interval: list, subtitle_type: str):
-    out_path = os.path.join(output_dir, f"{filename(path)}.mp4")
+                  sample_interval: list, output_args: dict[str, str]) -> None:
+    file_name = filename(path)
+    out_path = os.path.join(output_args["output_dir"], f"{file_name}.mp4")
 
-    logger.info(f"Adding subtitles to {filename(path)}...")
+    logger.info("Adding subtitles to %s...", file_name)
 
     ffmpeg_input_args = {}
     if sample_interval is not None:
@@ -56,19 +58,22 @@ def add_subtitles(path: str, transcribed: Subtitles, translated: Optional[Subtit
     # HACK: On Windows it's impossible to use absolute subtitle file path with ffmpeg
     # so we use temp copy instead
     # see: https://github.com/kkroening/ffmpeg-python/issues/745
-    with SubtitlesTempFile(transcribed) as transcribed_tmp, SubtitlesTempFile(translated) as translated_tmp:
+    with SubtitlesTempFile(transcribed) as transcribed_tmp, SubtitlesTempFile(
+            translated) as translated_tmp:
 
-        if subtitle_type == 'hard':
-            hard_subtitles(path, out_path, transcribed_tmp, translated_tmp, ffmpeg_input_args, ffmpeg_output_args)
-        elif subtitle_type == 'soft':
-            soft_subtitles(path, out_path, transcribed_tmp, translated_tmp, ffmpeg_input_args, ffmpeg_output_args)
+        if output_args["subtitle_type"] == 'hard':
+            hard_subtitles(path, out_path, transcribed_tmp, translated_tmp, ffmpeg_input_args,
+                           ffmpeg_output_args)
+        elif output_args["subtitle_type"] == 'soft':
+            soft_subtitles(path, out_path, transcribed_tmp, translated_tmp, ffmpeg_input_args,
+                           ffmpeg_output_args)
 
-    logger.info(f"Saved subtitled video to {os.path.abspath(out_path)}.")
+    logger.info("Saved subtitled video to %s.", os.path.abspath(out_path))
 
 
 def hard_subtitles(input_path: str, output_path: str,
                    transcribed: SubtitlesTempFile, translated: SubtitlesTempFile,
-                   input_args: dict, output_args: dict):
+                   input_args: dict, output_args: dict) -> None:
     video = ffmpeg.input(input_path, **input_args)
     audio = video.audio
 
@@ -88,7 +93,7 @@ def hard_subtitles(input_path: str, output_path: str,
 
 def soft_subtitles(input_path: str, output_path: str,
                    transcribed: SubtitlesTempFile, translated: SubtitlesTempFile,
-                   input_args: dict, output_args: dict):
+                   input_args: dict, output_args: dict) -> None:
     output_args['c'] = 'copy'
     output_args['c:s'] = 'mov_text'
     output_args['metadata:s:s:0'] = f'language={transcribed.subtitles.language}'

@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta
+from typing import Optional
 
 
-def str2bool(string: str):
+def str2bool(string: str) -> bool:
     string = string.lower()
     str2val = {"true": True, "false": False}
 
@@ -12,7 +13,7 @@ def str2bool(string: str):
         f"Expected one of {set(str2val.keys())}, got {string}")
 
 
-def str2timeinterval(string: str):
+def str2timeinterval(string: str) -> Optional[list[int]]:
     if string is None:
         return None
 
@@ -34,7 +35,7 @@ def str2timeinterval(string: str):
     return [start, end]
 
 
-def time_to_timestamp(string: str):
+def time_to_timestamp(string: str) -> int:
     split_time = string.split(':')
     if len(split_time) == 0 or len(split_time) > 3 or not all(x.isdigit() for x in split_time):
         raise ValueError(
@@ -49,7 +50,7 @@ def time_to_timestamp(string: str):
     return int(split_time[0]) * 60 * 60 + int(split_time[1]) * 60 + int(split_time[2])
 
 
-def try_parse_timestamp(string: str):
+def try_parse_timestamp(string: str) -> int:
     timestamp = parse_timestamp(string, '%H:%M:%S')
     if timestamp is not None:
         return timestamp
@@ -61,7 +62,7 @@ def try_parse_timestamp(string: str):
     return parse_timestamp(string, '%S')
 
 
-def parse_timestamp(string: str, pattern: str):
+def parse_timestamp(string: str, pattern: str) -> Optional[int]:
     try:
         date = datetime.strptime(string, pattern)
         delta = timedelta(
@@ -71,7 +72,7 @@ def parse_timestamp(string: str, pattern: str):
         return None
 
 
-def format_timestamp(seconds: float, always_include_hours: bool = False):
+def format_timestamp(seconds: float, always_include_hours: bool = False) -> str:
     assert seconds >= 0, "non-negative timestamp expected"
     milliseconds = round(seconds * 1000.0)
 
