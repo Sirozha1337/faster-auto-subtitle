@@ -1,10 +1,10 @@
 import os
-from typing import TextIO
+from typing import TextIO, Iterator
 from faster_whisper.transcribe import Segment
 from .convert import format_timestamp
 
 
-def write_srt(transcript: list[Segment], file: TextIO) -> None:
+def write_srt(transcript: Iterator[Segment], file: TextIO) -> None:
     for i, segment in enumerate(transcript, start=1):
         print(
             f"{i}\n"

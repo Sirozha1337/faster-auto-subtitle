@@ -10,7 +10,7 @@ from ..models.Subtitles import Subtitles
 logger = logging.getLogger(__name__)
 
 
-def get_audio(path: str, audio_channel_index: int, sample_interval: list) -> str:
+def get_audio(path: str, audio_channel_index: int, sample_interval: Optional[list] = None) -> str:
     temp_dir = tempfile.gettempdir()
 
     file_name = filename(path)
@@ -37,6 +37,22 @@ def get_audio(path: str, audio_channel_index: int, sample_interval: list) -> str
     ).run(quiet=True, overwrite_output=True)
 
     return output_path
+
+
+def preprocess_audio(path: str, audio_channel_index: int, sample_interval: Optional[list]) -> str:
+    if sample_interval is not None or audio_channel_index != 0:
+        return get_audio(path, audio_channel_index, sample_interval)
+
+    audio_info = ffmpeg.probe(path, select_streams='a')
+    audio_format = audio_info['format']
+    audio_streams = audio_info['streams']
+    if audio_format['format_name'] == 'wav' and \
+            audio_streams is not None and len(audio_streams) == 1:
+        audio_stream = audio_streams[0]
+        if audio_stream['codec_name'] == 'pcm_s16le' and audio_stream['sample_rate'] == '16000':
+            return path
+
+    return get_audio(path, audio_channel_index)
 
 
 def add_subtitles(path: str, transcribed: Subtitles, translated: Optional[Subtitles],

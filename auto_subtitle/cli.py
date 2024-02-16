@@ -1,7 +1,5 @@
 import argparse
-from faster_whisper import available_models
 from .utils.constants import LANGUAGE_CODES
-from .main import process
 from .utils.convert import str2bool, str2timeinterval
 
 
@@ -25,7 +23,10 @@ def main():
                               fragment of the video (e.g. 01:02:05-01:03:45)")
 
     parser.add_argument("--model", default="small",
-                        choices=available_models(), help="name of the Whisper model to use")
+                        choices=['tiny.en', 'tiny', 'base.en', 'base', 'small.en', 'small',
+                                 'medium.en', 'medium', 'large-v1', 'large-v2', 'large-v3',
+                                 'large'],
+                        help="name of the Whisper model to use")
 
     parser.add_argument("--device", type=str, default="auto",
                         choices=["cpu", "cuda", "auto"],
@@ -75,6 +76,7 @@ def main():
 
     args = parser.parse_args().__dict__
 
+    from .main import process
     process(args)
 
 

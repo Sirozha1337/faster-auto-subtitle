@@ -2,9 +2,9 @@ import os
 import warnings
 import logging
 from typing import Optional
-from .models.Subtitles import Subtitles
+from .models.Subtitles import Subtitles, SegmentsIterable
 from .utils.files import filename, write_srt
-from .utils.ffmpeg import get_audio, add_subtitles
+from .utils.ffmpeg import get_audio, add_subtitles, preprocess_audio
 from .utils.whisper import WhisperAI
 from .translation.easynmt_utils import EasyNMTWrapper
 
@@ -52,7 +52,10 @@ def process(args: dict):
 
     os.makedirs(output_args["output_dir"], exist_ok=True)
     for video in videos:
-        audio = get_audio(video, audio_channel, sample_interval)
+        if video.endswith('.wav'):
+            audio = preprocess_audio(video, audio_channel, sample_interval)
+        else:
+            audio = get_audio(video, audio_channel, sample_interval)
 
         transcribed, translated = perform_task(video, audio, language, target_language,
                                                transcribe_model, translate_model)
@@ -97,9 +100,9 @@ def translate_subtitles(subtitles: Subtitles, source_lang: str, target_lang: str
         src_lang = subtitles.language
 
     translated_segments = model.translate(
-        subtitles.segments, src_lang, target_lang)
+        list(subtitles.segments), src_lang, target_lang)
 
-    return Subtitles(translated_segments, target_lang)
+    return Subtitles(SegmentsIterable(translated_segments), target_lang)
 
 
 def save_subtitles(path: str, subtitles: Subtitles, output_dir: str,
@@ -122,4 +125,4 @@ def get_subtitles(source_path: str, audio_path: str, model: WhisperAI) -> Subtit
 
     segments, info = model.transcribe(audio_path)
 
-    return Subtitles(segments=list(segments), language=info.language)
+    return Subtitles(segments=SegmentsIterable(segments), language=info.language)
