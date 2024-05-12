@@ -2,7 +2,12 @@ faster-whisper==0.10.0
 tqdm==4.56.0
 ffmpeg-python==0.2.0
 wheel==0.42.0
-fasttext==0.9.2
-pybind11==2.11.1
-EasyNMT==2.0.2
 langcodes==3.3.0
+transformers>=4.4,<5
+torch>=1.6.0
+numpy
+nltk
+sentencepiece
+protobuf
+# this package should be installed with `pip install --no-deps EasyNMT==2.0.2`
+# EasyNMT==2.0.2

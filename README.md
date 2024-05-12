@@ -16,7 +16,7 @@ some time to load on the first run.
 
 To get started, you'll need Python 3.9 or newer. Install the binary by running the following command:
 
-    pip install wheel
+    pip install --no-deps EasyNMT==2.0.2
 
     pip install git+https://github.com/Sirozha1337/faster-auto-subtitle.git
 
