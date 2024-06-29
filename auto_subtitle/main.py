@@ -6,7 +6,6 @@ from .models.Subtitles import Subtitles, SegmentsIterable
 from .utils.files import filename, write_srt
 from .utils.ffmpeg import get_audio, add_subtitles, preprocess_audio, file_has_audio
 from .utils.whisper import WhisperAI
-from .translation.easynmt_utils import EasyNMTWrapper
 
 logger = logging.getLogger(__name__)
 
@@ -47,8 +46,11 @@ def process(args: dict):
         "compute_type": args.pop("compute_type")
     }
     transcribe_model = WhisperAI(model_args, args)
-    translate_model = EasyNMTWrapper(
-        device=model_args['device']) if target_language != 'en' else None
+    translate_model = None
+    if target_language != 'en':
+        from .translation.easynmt_utils import EasyNMTWrapper
+        translate_model = EasyNMTWrapper(
+            device=model_args['device'])
 
     os.makedirs(output_args["output_dir"], exist_ok=True)
     for path_to_process in paths_to_process:
@@ -106,7 +108,7 @@ def save_result(video: str, transcribed: Subtitles, translated: Subtitles, sampl
 
 def perform_task(video: str, audio: str, language: str, target_language: str,
                  transcribe_model: WhisperAI,
-                 translate_model: EasyNMTWrapper) -> tuple[Subtitles, Optional[Subtitles]]:
+                 translate_model: 'EasyNMTWrapper' = None) -> tuple[Subtitles, Optional[Subtitles]]:
     transcribed = get_subtitles(video, audio, transcribe_model)
     translated = None
 
@@ -118,7 +120,7 @@ def perform_task(video: str, audio: str, language: str, target_language: str,
 
 
 def translate_subtitles(subtitles: Subtitles, source_lang: str, target_lang: str,
-                        model: EasyNMTWrapper) -> Subtitles:
+                        model: 'EasyNMTWrapper' = None) -> Subtitles:
     src_lang = source_lang
     if src_lang == '' or src_lang is None:
         src_lang = subtitles.language
