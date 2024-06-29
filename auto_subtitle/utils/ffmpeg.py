@@ -1,8 +1,8 @@
 import os
 import tempfile
 import logging
-from typing import Optional
 import ffmpeg
+from typing import Optional
 from .tempfile import SubtitlesTempFile
 from .files import filename
 from ..models.Subtitles import Subtitles
@@ -39,6 +39,16 @@ def get_audio(path: str, audio_channel_index: int, sample_interval: Optional[lis
     return output_path
 
 
+def file_has_audio(path: str) -> bool:
+    try:
+        audio_info = ffmpeg.probe(path, select_streams='a')
+        return 'streams' in audio_info \
+            and audio_info['streams'] is not None \
+            and len(audio_info['streams']) > 0
+    except ffmpeg.Error:
+        return False
+
+
 def preprocess_audio(path: str, audio_channel_index: int, sample_interval: Optional[list]) -> str:
     if sample_interval is not None or audio_channel_index != 0:
         return get_audio(path, audio_channel_index, sample_interval)
@@ -71,7 +81,7 @@ def add_subtitles(path: str, transcribed: Subtitles, translated: Optional[Subtit
         ffmpeg_output_args['t'] = str(
             sample_interval[1] - sample_interval[0])
 
-    # HACK: On Windows it's impossible to use absolute subtitle file path with ffmpeg
+    # HACK: On Windows it's impossible to use absolute subtitle file path with ffmpeg,
     # so we use temp copy instead
     # see: https://github.com/kkroening/ffmpeg-python/issues/745
     with SubtitlesTempFile(transcribed) as transcribed_tmp, SubtitlesTempFile(

@@ -39,6 +39,10 @@ The following command will generate a `subtitled/video.mp4` file contained the i
 
     faster_auto_subtitle /path/to/video.mp4 -o subtitled/
 
+You can also specify a folder with multiple videos, and it will process all of them:
+
+    faster_auto_subtitle /path/to/videos/ -o subtitled/
+
 The default setting (which selects the `small` model) works well for transcribing English. You can optionally use a
 bigger model for better results (especially with other languages). The available models
 are `tiny`, `tiny.en`, `base`, `base.en`, `small`, `small.en`, `medium`, `medium.en`, `large`, `large-v1`, `large-v2`, `large-v3`.

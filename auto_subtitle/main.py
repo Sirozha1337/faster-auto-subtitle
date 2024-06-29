@@ -4,7 +4,7 @@ import logging
 from typing import Optional
 from .models.Subtitles import Subtitles, SegmentsIterable
 from .utils.files import filename, write_srt
-from .utils.ffmpeg import get_audio, add_subtitles, preprocess_audio
+from .utils.ffmpeg import get_audio, add_subtitles, preprocess_audio, file_has_audio
 from .utils.whisper import WhisperAI
 from .translation.easynmt_utils import EasyNMTWrapper
 
@@ -39,7 +39,7 @@ def process(args: dict):
         "subtitle_type": args.pop("subtitle_type")
     }
 
-    videos = args.pop('video')
+    paths_to_process = args.pop('video')
     audio_channel = args.pop('audio_channel')
     model_args = {
         "model_size_or_path": model_name,
@@ -51,16 +51,42 @@ def process(args: dict):
         device=model_args['device']) if target_language != 'en' else None
 
     os.makedirs(output_args["output_dir"], exist_ok=True)
-    for video in videos:
-        if video.endswith('.wav'):
-            audio = preprocess_audio(video, audio_channel, sample_interval)
-        else:
-            audio = get_audio(video, audio_channel, sample_interval)
+    for path_to_process in paths_to_process:
+        process_path(audio_channel, language, output_args, path_to_process, sample_interval,
+                     target_language, transcribe_model, translate_model)
 
-        transcribed, translated = perform_task(video, audio, language, target_language,
-                                               transcribe_model, translate_model)
 
-        save_result(video, transcribed, translated, sample_interval, output_args)
+def process_path(audio_channel, language, output_args, path_to_process, sample_interval,
+                 target_language, transcribe_model, translate_model):
+    if not os.path.exists(path_to_process):
+        logger.error("File %s does not exist.", path_to_process)
+        return
+
+    if not os.path.isdir(path_to_process):
+        process_file(audio_channel, language, output_args, sample_interval, target_language,
+                     transcribe_model, translate_model, path_to_process)
+        return
+
+    logger.info("Processing all files in directory %s", path_to_process)
+    for file_name in os.listdir(path_to_process):
+        process_file(audio_channel, language, output_args, sample_interval, target_language,
+                     transcribe_model, translate_model, os.path.join(path_to_process, file_name))
+
+
+def process_file(audio_channel, language, output_args, sample_interval, target_language,
+                 transcribe_model, translate_model, file_name):
+    if not file_has_audio(file_name):
+        logger.info("File %s has no audio, skipping.", file_name)
+        return
+
+    if file_name.endswith('.wav'):
+        audio = preprocess_audio(file_name, audio_channel, sample_interval)
+    else:
+        audio = get_audio(file_name, audio_channel, sample_interval)
+
+    transcribed, translated = perform_task(file_name, audio, language, target_language,
+                                           transcribe_model, translate_model)
+    save_result(file_name, transcribed, translated, sample_interval, output_args)
 
 
 def save_result(video: str, transcribed: Subtitles, translated: Subtitles, sample_interval: list,
@@ -84,9 +110,7 @@ def perform_task(video: str, audio: str, language: str, target_language: str,
     transcribed = get_subtitles(video, audio, transcribe_model)
     translated = None
 
-    logger.info('Subtitles generated.')
     if target_language != 'en':
-        logger.info('Translating subtitles... This might take a while.')
         translated = translate_subtitles(
             transcribed, language, target_language, translate_model)
 
@@ -99,8 +123,11 @@ def translate_subtitles(subtitles: Subtitles, source_lang: str, target_lang: str
     if src_lang == '' or src_lang is None:
         src_lang = subtitles.language
 
+    segments = list(subtitles.segments)
+    logger.info('Subtitles generated.')
+    logger.info('Translating subtitles... This might take a while.')
     translated_segments = model.translate(
-        list(subtitles.segments), src_lang, target_lang)
+        segments, src_lang, target_lang)
 
     return Subtitles(SegmentsIterable(translated_segments), target_lang)
 
