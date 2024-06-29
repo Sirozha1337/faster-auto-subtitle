@@ -1,19 +1,19 @@
 from setuptools import setup, find_packages
 
 setup(
-    version="1.2",
+    version="1.3",
     name="faster_auto_subtitle",
     packages=find_packages(),
     py_modules=["auto_subtitle"],
     author="Sergey Chernyaev",
     install_requires=[
-        'faster-whisper',
-        'tqdm',
-        'ffmpeg-python',
-        'langcodes',
+        'faster-whisper==1.0.2',
+        'tqdm==4.66.4',
+        'ffmpeg-python==0.2.0',
+        'langcodes==3.3.0',
         'transformers>=4.4,<5',
         'torch>=1.6.0',
-        'numpy',
+        'numpy>=1.24.2,<=1.26.4',
         'nltk',
         'sentencepiece',
         'protobuf',

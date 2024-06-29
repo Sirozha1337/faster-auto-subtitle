@@ -33,6 +33,10 @@ brew install ffmpeg
 choco install ffmpeg
 ```
 
+Newer version of [`faster-whisper`](https://github.com/SYSTRAN/faster-whisper) requires installation of [CUDA 12](https://developer.nvidia.com/cuda-downloads) to run on GPU, or you can run it on CPU with `--device cpu` option. 
+
+Additional CUDA installation instructions can be found [here](https://github.com/SYSTRAN/faster-whisper?tab=readme-ov-file#gpu).
+
 ## Usage
 
 The following command will generate a `subtitled/video.mp4` file contained the input video with overlayed subtitles.
