@@ -108,7 +108,7 @@ def hard_subtitles(input_path: str, output_path: str,
         force_style="OutlineColour=&H40000000,BorderStyle=3")
 
     if translated.tmp_file is not None:
-        intermediate.filter(
+        intermediate = intermediate.filter(
             'subtitles', translated.tmp_file_path,
             force_style="OutlineColour=&H40000000,BorderStyle=3,Alignment=6")
     ffmpeg.concat(
