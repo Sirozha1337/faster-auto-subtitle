@@ -1,8 +1,8 @@
 import os
 import tempfile
 import logging
-import ffmpeg
 from typing import Optional
+import ffmpeg
 from .tempfile import SubtitlesTempFile
 from .files import filename
 from ..models.Subtitles import Subtitles

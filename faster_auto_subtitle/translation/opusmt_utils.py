@@ -2,7 +2,7 @@ import time
 import logging
 from typing import List, Optional
 import torch
-from huggingface_hub import list_models, ModelFilter
+from huggingface_hub import list_models
 from transformers import MarianMTModel, MarianTokenizer
 from .languages import to_alpha2_languages, to_alpha3_language
 
@@ -47,12 +47,7 @@ class OpusMT:
             return
 
         logger.info('Loading a list of available language models from OPUS-MT')
-        model_list = list_models(
-            filter=ModelFilter(
-                author=NLP_ROOT,
-                model_name='opus-mt'
-            )
-        )
+        model_list = list_models(author=NLP_ROOT, model_name='opus-mt', tags=['marian'], sort='last_modified')
 
         suffix = [x.modelId.split("/")[1] for x in model_list
                   if x.modelId.startswith(f'{NLP_ROOT}/opus-mt') and 'tc' not in x.modelId]

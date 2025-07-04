@@ -22,8 +22,8 @@ class SegmentsIterable(Iterable):
             item = self.segments[self.index]
             self.index += 1
             return item
-        else:
-            raise StopIteration
+        
+        raise StopIteration
 
     def __next_iter(self):
         try:
@@ -31,9 +31,9 @@ class SegmentsIterable(Iterable):
             self.segments.append(item)
             self.length += 1
             return item
-        except StopIteration:
+        except StopIteration as exc:
             self.index = 0
-            raise StopIteration
+            raise exc
 
     def __next__(self):
         if self.index is not None:

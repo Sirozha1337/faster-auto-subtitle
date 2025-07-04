@@ -16,9 +16,10 @@ some time to load on the first run.
 
 To get started, you'll need Python 3.9 or newer. Install the binary by running the following command:
 
-    pip install --no-deps EasyNMT==2.0.2
-
     pip install git+https://github.com/Sirozha1337/faster-auto-subtitle.git
+
+    # In case you need to translate Thai language
+    pip install thai-segmenter==0.4.2
 
 You'll also need to install [`ffmpeg`](https://ffmpeg.org/), which is available from most package managers:
 

@@ -2,8 +2,8 @@ import tempfile
 import os
 import shutil
 from typing import TextIO, cast
-from auto_subtitle.models.Subtitles import Subtitles
-from auto_subtitle.utils.files import write_srt
+from faster_auto_subtitle.models.Subtitles import Subtitles
+from faster_auto_subtitle.utils.files import write_srt
 
 
 class SubtitlesTempFile:
