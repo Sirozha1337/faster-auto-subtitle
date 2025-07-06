@@ -16,7 +16,6 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install application
       run: |
-        pip install --no-deps EasyNMT==2.0.2
         pip install -e .
     - name: Check that package was installed successfully
       run: |

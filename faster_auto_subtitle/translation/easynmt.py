@@ -169,9 +169,9 @@ class EasyNMT:
             sentences = list(re.findall('[^!?。.]+[!?。.]*', text, flags=re.U))
         else:
             try:
-                nltk.data.find('tokenizers/punkt')
+                nltk.data.find('tokenizers/punkt_tab')
             except LookupError:
-                nltk.download('punkt')
+                nltk.download('punkt_tab')
 
             sentences = nltk.sent_tokenize(text)
 

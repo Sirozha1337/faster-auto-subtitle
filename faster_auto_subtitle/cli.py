@@ -71,7 +71,7 @@ def main():
     parser.add_argument("--no_speech_threshold", type=float, default=0.6,
                         help="model parameter, tweak to increase accuracy")
 
-    parser.add_argument("--condition_on_previous_text", type=str2bool, default=True,
+    parser.add_argument("--condition_on_previous_text", type=str2bool, default=False,
                         help="model parameter, tweak to increase accuracy")
 
     args = parser.parse_args().__dict__

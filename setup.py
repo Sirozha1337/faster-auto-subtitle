@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    version="1.5",
+    version="1.6",
     name="faster_auto_subtitle",
     packages=find_packages(),
     py_modules=["faster_auto_subtitle"],

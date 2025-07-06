@@ -14,12 +14,27 @@ some time to load on the first run.
 
 ## Installation
 
-To get started, you'll need Python 3.9 or newer. Install the binary by running the following command:
+### Docker Container (recommended)
 
-    pip install git+https://github.com/Sirozha1337/faster-auto-subtitle.git
+This method is recommended for most users as it isolates dependencies and ensures compatibility.
 
-    # In case you need to translate Thai language
-    pip install thai-segmenter==0.4.2
+You can download the latest Docker image from GitHub Container Registry:
+
+    docker pull ghcr.io/sirozha1337/faster-auto-subtitle:latest
+
+Then run the container:
+
+    docker run --gpus all --rm -v /path/to/cache:/root/.cache/huggingface/hub -v /path/to/video.mp4:/app/input/video.mp4 -v /path/to/output:/app/output ghcr.io/sirozha1337/faster-auto-subtitle:latest
+
+Remember to replace `/path/to/video.mp4` with the path to your video file and `/path/to/output` with the path where you want the output files to be saved. 
+
+Also replace `/path/to/cache` with the host directory where you want to cache the Hugging Face models. This will speed up subsequent runs as it would not require downloading those models again.
+
+### Python
+
+#### Requirements
+
+To get started, you'll need Python 3.11 or newer.
 
 You'll also need to install [`ffmpeg`](https://ffmpeg.org/), which is available from most package managers:
 
@@ -34,11 +49,35 @@ brew install ffmpeg
 choco install ffmpeg
 ```
 
-Newer version of [`faster-whisper`](https://github.com/SYSTRAN/faster-whisper) requires installation of [CUDA 12](https://developer.nvidia.com/cuda-downloads) to run on GPU, or you can run it on CPU with `--device cpu` option. 
+Newer version of [`faster-whisper`](https://github.com/SYSTRAN/faster-whisper) requires installation of [CUDA 12](https://developer.nvidia.com/cuda-downloads) to run on GPU, or you can run it on CPU with `--device cpu` option.
 
 Additional CUDA installation instructions can be found [here](https://github.com/SYSTRAN/faster-whisper?tab=readme-ov-file#gpu).
 
+#### Virtual Environment (recommended)
+
+To isolate dependencies, you can use Python’s built-in venv module:
+
+    python -m venv venv
+    source venv/bin/activate  # On Windows: venv\Scripts\activate
+    pip install --upgrade pip
+    pip install git+https://github.com/Sirozha1337/faster-auto-subtitle.git
+    
+    # For Thai language translation support, run this command:
+    pip install thai-segmenter==0.4.2
+
+#### System-wide Installation
+
+Install the binary by running the following command:
+
+    pip install git+https://github.com/Sirozha1337/faster-auto-subtitle.git
+
+    # In case you need to translate Thai language
+    pip install thai-segmenter==0.4.2
+
 ## Usage
+
+For the sake of conciseness, the usage is given for the command-line interface (CLI) version of the tool. 
+If you're using a Docker container, you can use same CLI arguments just omitting the output and input file paths, as they are already set to the mounted volumes in the container.
 
 The following command will generate a `subtitled/video.mp4` file contained the input video with overlayed subtitles.
 
@@ -79,13 +118,10 @@ Higher `beam_size` usually leads to greater accuracy, but slows down the process
 Setting higher `no_speech_threshold` could be useful for videos with a lot of background noise to stop Whisper from "
 hallucinating" subtitles for it.
 
-In my experience settings option `condition_on_previous_text` to `False` dramatically increases accuracy for videos
-like TV Shows with an intro song at the start.
-
 You can use `sample_interval` parameter to generate subtitles for a portion of the video to play around with those
 parameters:
 
-    faster_auto_subtitle /path/to/video.mp4 --model medium --sample_interval 00:05:30-00:07:00 --condition_on_previous_text False --beam_size 6 --no_speech_threshold 0.7
+    faster_auto_subtitle /path/to/video.mp4 --model medium --sample_interval 00:05:30-00:07:00 --beam_size 6 --no_speech_threshold 0.7
 
 ## License
 
