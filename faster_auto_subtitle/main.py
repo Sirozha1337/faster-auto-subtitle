@@ -2,7 +2,7 @@ import os
 import warnings
 import logging
 from typing import Optional
-from .models.Subtitles import Subtitles, SegmentsIterable
+from .models.subtitles import Subtitles, SegmentsIterable
 from .utils.files import filename, write_srt
 from .utils.ffmpeg import get_audio, add_subtitles, preprocess_audio, file_has_audio
 from .utils.whisper import WhisperAI
@@ -15,6 +15,10 @@ def process(args: dict):
     language: str = args.pop("language")
     sample_interval: list = args.pop("sample_interval")
     target_language: str = args.pop("target_language")
+    translator_mode: str = args.pop("translator_mode", "easynmt")
+    deep_translator_backend: str = args.pop("deep_translator_backend", "google")
+    # Collect extra deep-translator kwargs if present
+    deep_translator_kwargs = args.pop("deep_translator_kwargs", {})
 
     logging.basicConfig(encoding='utf-8', level=logging.INFO)
 
@@ -48,9 +52,12 @@ def process(args: dict):
     transcribe_model = WhisperAI(model_args, args)
     translate_model = None
     if target_language != 'en':
-        from .translation.easynmt_utils import EasyNMTWrapper
-        translate_model = EasyNMTWrapper(
-            device=model_args['device'])
+        if translator_mode == 'deep-translator':
+            from .translation.deep_translator import DeepTranslatorWrapper
+            translate_model = DeepTranslatorWrapper(mode=deep_translator_backend, **deep_translator_kwargs)
+        else:
+            from .translation.opusmt import OpusMTWrapper
+            translate_model = OpusMTWrapper(device=model_args['device'])
 
     os.makedirs(output_args["output_dir"], exist_ok=True)
     for path_to_process in paths_to_process:
@@ -91,7 +98,7 @@ def process_file(audio_channel, language, output_args, sample_interval, target_l
     save_result(file_name, transcribed, translated, sample_interval, output_args)
 
 
-def save_result(video: str, transcribed: Subtitles, translated: Subtitles, sample_interval: list,
+def save_result(video: str, transcribed: Subtitles, translated: Optional[Subtitles], sample_interval: list,
                 output_args: dict[str, str]) -> None:
     if output_args["output_type"] == 'all' or output_args["output_type"] == 'srt':
         logger.info('Saving subtitle files...')
@@ -108,11 +115,11 @@ def save_result(video: str, transcribed: Subtitles, translated: Subtitles, sampl
 
 def perform_task(video: str, audio: str, language: str, target_language: str,
                  transcribe_model: WhisperAI,
-                 translate_model: 'EasyNMTWrapper' = None) -> tuple[Subtitles, Optional[Subtitles]]:
+                 translate_model = None) -> tuple[Subtitles, Optional[Subtitles]]:
     transcribed = get_subtitles(video, audio, transcribe_model)
     translated = None
 
-    if target_language != 'en':
+    if target_language != 'en' and translate_model is not None:
         translated = translate_subtitles(
             transcribed, language, target_language, translate_model)
 
@@ -120,7 +127,10 @@ def perform_task(video: str, audio: str, language: str, target_language: str,
 
 
 def translate_subtitles(subtitles: Subtitles, source_lang: str, target_lang: str,
-                        model: 'EasyNMTWrapper' = None) -> Subtitles:
+                        model = None) -> Optional[Subtitles]:
+    if model is None:
+        return None
+
     src_lang = source_lang
     if src_lang == '' or src_lang is None:
         src_lang = subtitles.language
@@ -128,9 +138,12 @@ def translate_subtitles(subtitles: Subtitles, source_lang: str, target_lang: str
     segments = list(subtitles.segments)
     logger.info('Subtitles generated.')
     logger.info('Translating subtitles... This might take a while.')
-    translated_segments = model.translate(
+    translated_segments = model.translate_segments(
         segments, src_lang, target_lang)
-
+        
+    if translated_segments is None:
+        return None
+        
     return Subtitles(SegmentsIterable(translated_segments), target_lang)
 
 

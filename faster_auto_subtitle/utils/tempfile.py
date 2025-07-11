@@ -2,7 +2,7 @@ import tempfile
 import os
 import shutil
 from typing import TextIO, cast
-from faster_auto_subtitle.models.Subtitles import Subtitles
+from faster_auto_subtitle.models.subtitles import Subtitles
 from faster_auto_subtitle.utils.files import write_srt
 
 

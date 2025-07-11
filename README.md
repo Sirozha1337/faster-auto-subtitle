@@ -6,11 +6,9 @@ using [faster-whisper](https://github.com/SYSTRAN/faster-whisper) implementation
 This repository uses `ffmpeg` and [OpenAI's Whisper](https://openai.com/blog/whisper) to automatically generate and
 overlay subtitles on any video. 
 
-It also uses [Opus-MT](https://github.com/Helsinki-NLP/Opus-MT) to translate subtitles
-to another language.
+It can also use [Opus-MT](https://github.com/Helsinki-NLP/Opus-MT) or [deep translator](https://pypi.org/project/deep-translator/) to translate subtitles to another language.
 
-While both transcription and translation are offline processes they require downloading pre-trained models that require 
-some time to load on the first run.
+While both transcription and translation (if using Opus-MT) are offline processes they require downloading pre-trained models that require some time to load on the first run. 
 
 ## Installation
 
@@ -98,7 +96,7 @@ Adding `--task translate` will translate the subtitles into English:
     faster_auto_subtitle /path/to/video.mp4 --task translate
 
 Adding `--target_language {2-letter-language-code}` will translate the subtitles into specified language
-using [Opus-MT](https://github.com/Helsinki-NLP/Opus-MT):
+using [Opus-MT](https://github.com/Helsinki-NLP/Opus-MT) (by default) or [deep translator](https://pypi.org/project/deep-translator/):
 
     faster_auto_subtitle /path/to/video.mp4 --target_language fr
 
@@ -108,6 +106,46 @@ from source to english and from english to source.
 Run the following to view all available options:
 
     faster_auto_subtitle --help
+
+## Deep-Translator Translation Mode
+
+You can use the deep-translator package for subtitle translation with various backends (Google, Deepl, MyMemory, etc.).
+
+### Example: Google Translate (no API key required)
+
+```sh
+faster_auto_subtitle your_video.mp4 \
+  --task translate \
+  --translator_mode deep-translator \
+  --deep_translator_backend google
+```
+
+### Example: Deepl (API key required)
+
+```sh
+faster_auto_subtitle your_video.mp4 \
+  --task translate \
+  --translator_mode deep-translator \
+  --deep_translator_backend deepl \
+  --deep_translator_kwargs '{"api_key": "YOUR_DEEPL_API_KEY"}'
+```
+
+### Supported Backends
+
+- google
+- mymemory
+- deepl
+- qcri
+- linguee
+- pons
+- yandex
+- microsoft
+- papago
+- libre
+- baidu
+
+For more, see the [deep-translator documentation](https://deep-translator.readthedocs.io/).
+
 
 ## Tips
 

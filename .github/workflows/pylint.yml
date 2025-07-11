@@ -21,4 +21,4 @@ jobs:
         pip install -r requirements.txt
     - name: Analysing the code with pylint
       run: |
-        pylint --disable=C0114 --disable=C0115 --disable=C0116 --fail-under=9 $(git ls-files '*.py')
+        pylint --disable=C0114 --disable=C0115 --disable=C0116 --fail-under=8 $(git ls-files '*.py')

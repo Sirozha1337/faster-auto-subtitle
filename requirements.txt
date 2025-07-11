@@ -9,5 +9,6 @@ nltk==3.9.1
 huggingface_hub==0.33.2
 sentencepiece==0.2.0
 sacremoses==0.1.1
+deep-translator==1.11.4
 # In case you need to translate from Thai to other languages
 # thai-segmenter==0.4.2

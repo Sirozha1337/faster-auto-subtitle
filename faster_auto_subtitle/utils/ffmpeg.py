@@ -5,7 +5,7 @@ from typing import Optional
 import ffmpeg
 from .tempfile import SubtitlesTempFile
 from .files import filename
-from ..models.Subtitles import Subtitles
+from ..models.subtitles import Subtitles
 
 logger = logging.getLogger(__name__)
 

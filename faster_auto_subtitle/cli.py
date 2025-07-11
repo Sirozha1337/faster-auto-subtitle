@@ -1,6 +1,7 @@
 import argparse
 from .utils.constants import LANGUAGE_CODES
 from .utils.convert import str2bool, str2timeinterval
+import json
 
 
 def main():
@@ -74,7 +75,19 @@ def main():
     parser.add_argument("--condition_on_previous_text", type=str2bool, default=False,
                         help="model parameter, tweak to increase accuracy")
 
+    parser.add_argument("--translator_mode", type=str, default="opusmt",
+                        choices=["opusmt", "deep-translator"], 
+                        help="Which translation mode to use: opusmt, or deep-translator")
+
+    parser.add_argument("--deep_translator_backend", type=str, default="google",
+                        choices=["google", "mymemory", "deepl", "qcri", "linguee", "pons", "yandex", "microsoft", "papago", "libre", "tencent", "baidu"],
+                        help="Which deep-translator backend to use if translator_mode is deep-translator")
+
+    parser.add_argument("--deep_translator_kwargs", type=str, default="{}", 
+                        help="Extra kwargs for deep-translator backend as a JSON string (e.g. {\"api_key\": \"yourkey\"})")
+
     args = parser.parse_args().__dict__
+    args["deep_translator_kwargs"] = json.loads(args["deep_translator_kwargs"])
 
     from .main import process
     process(args)
