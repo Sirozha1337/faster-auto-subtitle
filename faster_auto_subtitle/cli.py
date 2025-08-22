@@ -1,5 +1,4 @@
 import argparse
-from .utils.constants import LANGUAGE_CODES
 from .utils.convert import str2bool, str2timeinterval
 import json
 
@@ -56,12 +55,10 @@ def main():
                               or X->Language translation ('translate')")
 
     parser.add_argument("--language", type=str, default="auto",
-                        choices=LANGUAGE_CODES,
                         help="What is the origin language of the video? \
                               If unset, it is detected automatically.")
 
     parser.add_argument("--target_language", type=str, default="en",
-                        choices=LANGUAGE_CODES,
                         help="Desired language to translate subtitles to. \
                               If language is not en, Opus-MT will be used. \
                               See https://github.com/Helsinki-NLP/Opus-MT.")
