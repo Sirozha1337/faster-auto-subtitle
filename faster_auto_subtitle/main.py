@@ -6,6 +6,7 @@ from .models.subtitles import Subtitles, SegmentsIterable
 from .utils.files import filename, write_srt
 from .utils.ffmpeg import get_audio, add_subtitles, preprocess_audio, file_has_audio
 from .utils.whisper import WhisperAI
+from .utils.constants import LANGUAGE_CODES
 
 logger = logging.getLogger(__name__)
 
@@ -52,12 +53,15 @@ def process(args: dict):
     transcribe_model = WhisperAI(model_args, args)
     translate_model = None
     if target_language != 'en':
+        supported_languages = LANGUAGE_CODES
         if translator_mode == 'deep-translator':
             from .translation.deep_translator import DeepTranslatorWrapper
             translate_model = DeepTranslatorWrapper(mode=deep_translator_backend, **deep_translator_kwargs)
+            supported_languages = list(translate_model.translator_class().get_supported_languages(as_dict=True).values())
         else:
             from .translation.opusmt import OpusMTWrapper
             translate_model = OpusMTWrapper(device=model_args['device'])
+        assert target_language in supported_languages, f"Target language '{target_language}' not supported. Use one of: {', '.join(supported_languages)}"
 
     os.makedirs(output_args["output_dir"], exist_ok=True)
     for path_to_process in paths_to_process:
