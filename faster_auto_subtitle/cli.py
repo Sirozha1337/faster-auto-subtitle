@@ -1,5 +1,6 @@
 import argparse
 from .utils.convert import str2bool, str2timeinterval
+from faster_whisper.utils import available_models
 import json
 
 
@@ -23,9 +24,7 @@ def main():
                               fragment of the video (e.g. 01:02:05-01:03:45)")
 
     parser.add_argument("--model", default="small",
-                        choices=['tiny.en', 'tiny', 'base.en', 'base', 'small.en', 'small',
-                                 'medium.en', 'medium', 'large-v1', 'large-v2', 'large-v3',
-                                 'large'],
+                        choices=available_models(),
                         help="name of the Whisper model to use")
 
     parser.add_argument("--device", type=str, default="auto",
@@ -73,14 +72,14 @@ def main():
                         help="model parameter, tweak to increase accuracy")
 
     parser.add_argument("--translator_mode", type=str, default="opusmt",
-                        choices=["opusmt", "deep-translator"], 
+                        choices=["opusmt", "deep-translator"],
                         help="Which translation mode to use: opusmt, or deep-translator")
 
     parser.add_argument("--deep_translator_backend", type=str, default="google",
                         choices=["google", "mymemory", "deepl", "qcri", "linguee", "pons", "yandex", "microsoft", "papago", "libre", "tencent", "baidu"],
                         help="Which deep-translator backend to use if translator_mode is deep-translator")
 
-    parser.add_argument("--deep_translator_kwargs", type=str, default="{}", 
+    parser.add_argument("--deep_translator_kwargs", type=str, default="{}",
                         help="Extra kwargs for deep-translator backend as a JSON string (e.g. {\"api_key\": \"yourkey\"})")
 
     args = parser.parse_args().__dict__

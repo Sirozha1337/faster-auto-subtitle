@@ -4,11 +4,11 @@ This is a fork of [auto_subtitle](https://github.com/m1guelpf/auto-subtitle)
 using [faster-whisper](https://github.com/SYSTRAN/faster-whisper) implementation.
 
 This repository uses `ffmpeg` and [OpenAI's Whisper](https://openai.com/blog/whisper) to automatically generate and
-overlay subtitles on any video. 
+overlay subtitles on any video.
 
 It can also use [Opus-MT](https://github.com/Helsinki-NLP/Opus-MT) or [deep translator](https://pypi.org/project/deep-translator/) to translate subtitles to another language.
 
-While both transcription and translation (if using Opus-MT) are offline processes they require downloading pre-trained models that require some time to load on the first run. 
+While both transcription and translation (if using Opus-MT) are offline processes they require downloading pre-trained models that require some time to load on the first run.
 
 ## Installation
 
@@ -24,7 +24,7 @@ Then run the container:
 
     docker run --gpus all --rm -v /path/to/cache:/root/.cache/huggingface/hub -v /path/to/video.mp4:/app/input/video.mp4 -v /path/to/output:/app/output ghcr.io/sirozha1337/faster-auto-subtitle:latest
 
-Remember to replace `/path/to/video.mp4` with the path to your video file and `/path/to/output` with the path where you want the output files to be saved. 
+Remember to replace `/path/to/video.mp4` with the path to your video file and `/path/to/output` with the path where you want the output files to be saved.
 
 Also replace `/path/to/cache` with the host directory where you want to cache the Hugging Face models. This will speed up subsequent runs as it would not require downloading those models again.
 
@@ -59,7 +59,7 @@ To isolate dependencies, you can use Python’s built-in venv module:
     source venv/bin/activate  # On Windows: venv\Scripts\activate
     pip install --upgrade pip
     pip install git+https://github.com/Sirozha1337/faster-auto-subtitle.git
-    
+
     # For Thai language translation support, run this command:
     pip install thai-segmenter==0.4.2
 
@@ -74,7 +74,7 @@ Install the binary by running the following command:
 
 ## Usage
 
-For the sake of conciseness, the usage is given for the command-line interface (CLI) version of the tool. 
+For the sake of conciseness, the usage is given for the command-line interface (CLI) version of the tool.
 If you're using a Docker container, you can use same CLI arguments just omitting the output and input file paths, as they are already set to the mounted volumes in the container.
 
 The following command will generate a `subtitled/video.mp4` file contained the input video with overlayed subtitles.
@@ -86,8 +86,18 @@ You can also specify a folder with multiple videos, and it will process all of t
     faster_auto_subtitle /path/to/videos/ -o subtitled/
 
 The default setting (which selects the `small` model) works well for transcribing English. You can optionally use a
-bigger model for better results (especially with other languages). The available models
-are `tiny`, `tiny.en`, `base`, `base.en`, `small`, `small.en`, `medium`, `medium.en`, `large`, `large-v1`, `large-v2`, `large-v3`.
+bigger model for better results (especially with other languages).
+
+
+Available models: `tiny.en`, `tiny`, `base.en`, `base`, `small.en`, `small`, `medium.en`, `medium`, `large-v1`, `large-v2`, `large-v3`, `large`,
+ `distil-large-v2`, `distil-medium.en`, `distil-small.en`, `distil-large-v3`, `distil-large-v3.5`, `large-v3-turbo`
+
+**Note**:
+- `distil` models are supposed to be more accurate and performant but they support only English language output
+- `large-v3-turbo` model supports multiple languages and is a more performant and less accurate version of the `large-v3`
+- See HuggingFace model pages for more info: [distil](https://huggingface.co/distil-whisper/distil-large-v3), [turbo](https://huggingface.co/mobiuslabsgmbh/faster-whisper-large-v3-turbo)
+
+Example running with the selected model:
 
     faster_auto_subtitle /path/to/video.mp4 --model medium
 
@@ -102,6 +112,10 @@ using [Opus-MT](https://github.com/Helsinki-NLP/Opus-MT) (by default) or [deep t
 
 This will require downloading the appropriate model. If direct translation is not available it will attempt translation
 from source to english and from english to source.
+
+When running with `--output_type video` or `--output_type all` be sure to set the `--subtitle_type`:
+- `hard` (default) will add the subtitles into the video stream (if you've chosen to translate, it will add both tracks with translated on the top)
+- `soft` will include both subtitle tracks into the video container
 
 Run the following to view all available options:
 

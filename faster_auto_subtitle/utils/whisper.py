@@ -42,8 +42,9 @@ class WhisperAI:
     def __init__(self, model_args: dict, transcribe_args: dict):
         self.model = WhisperModel(**model_args)
         self.transcribe_args = transcribe_args
+        self.model_name = model_args.get("model_size_or_path", "")
 
-    def transcribe(self, audio_path: str) -> tuple[Iterable[Segment], TranscriptionInfo]:
+    def transcribe(self, audio_path: str) -> tuple[Iterable[Segment], str]:
         """
         Transcribes the specified audio file and yields the resulting segments.
 
@@ -58,7 +59,11 @@ class WhisperAI:
             audio_path, **self.transcribe_args)
         warnings.filterwarnings("default")
 
-        return self.subtitles_iterator(segments, info), info
+        language = info.language
+        if "distil" in self.model_name:
+            language = "en"
+
+        return self.subtitles_iterator(segments, info), language
 
     @staticmethod
     def subtitles_iterator(segments: Iterable[Segment],

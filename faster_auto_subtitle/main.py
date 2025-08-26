@@ -135,19 +135,19 @@ def translate_subtitles(subtitles: Subtitles, source_lang: str, target_lang: str
     if model is None:
         return None
 
-    src_lang = source_lang
+    src_lang = subtitles.language
     if src_lang == '' or src_lang is None:
-        src_lang = subtitles.language
+        src_lang = source_lang
 
     segments = list(subtitles.segments)
     logger.info('Subtitles generated.')
     logger.info('Translating subtitles... This might take a while.')
     translated_segments = model.translate_segments(
         segments, src_lang, target_lang)
-        
+
     if translated_segments is None:
         return None
-        
+
     return Subtitles(SegmentsIterable(translated_segments), target_lang)
 
 
@@ -169,6 +169,6 @@ def get_subtitles(source_path: str, audio_path: str, model: WhisperAI) -> Subtit
     logger.info("Generating subtitles for %s... This might take a while.",
                 filename(source_path))
 
-    segments, info = model.transcribe(audio_path)
+    segments, language = model.transcribe(audio_path)
 
-    return Subtitles(segments=SegmentsIterable(segments), language=info.language)
+    return Subtitles(segments=SegmentsIterable(segments), language=language)

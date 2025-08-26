@@ -1,4 +1,4 @@
-faster-whisper==1.1.1
+faster-whisper==1.2.0
 tqdm==4.66.4
 ffmpeg-python==0.2.0
 langcodes==3.3.0
