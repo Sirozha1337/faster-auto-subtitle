@@ -1008,4 +1008,5 @@ GROUP_MEMBERS = {
         "bos_Latn", "bul", "bul_Latn", "hrv", "mkd", "slv", "srp_Cyrl", "srp_Latn"
     }),
     "zlw": ("West Slavic languages", {"csb_Latn", "dsb", "hsb", "pol", "ces"}),
+    "caenes": ("Catalan, English, Spanish", {"spa", "cat", "eng"}),
 }

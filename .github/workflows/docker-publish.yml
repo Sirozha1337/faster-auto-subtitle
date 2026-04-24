@@ -3,10 +3,15 @@ name: Build and Push Docker Image
 on:
   release:
     types: [published]
-    
+  workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        cuda: ["12.6", "12.8", "cpu"]
 
     steps:
       - name: Checkout code
@@ -14,6 +19,8 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker
         
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -22,11 +29,45 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Build CPU Base Image
+        if: matrix.cuda == 'cpu'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.cpu
+          push: false
+          load: true
+          tags: cpu-base:latest
+
+      - name: Prepare Tags and Base Image
+        id: meta
+        run: |
+          DOCKER_IMAGE=$(echo "ghcr.io/${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          VERSION=${{ github.ref_name }}
+          CUDA=${{ matrix.cuda }}
+          
+          if [ "${CUDA}" = "cpu" ]; then
+            TAGS="${DOCKER_IMAGE}:cpu,${DOCKER_IMAGE}:${VERSION}-cpu"
+            BASE_IMAGE="cpu-base:latest"
+          else
+            TAGS="${DOCKER_IMAGE}:${VERSION}-cuda${CUDA}"
+            BASE_IMAGE="pytorch/pytorch:2.11.0-cuda${CUDA}-cudnn9-runtime"
+            if [ "${CUDA}" = "12.6" ]; then
+              TAGS="${TAGS},${DOCKER_IMAGE}:latest,${DOCKER_IMAGE}:${VERSION}"
+            fi
+          fi
+          
+          echo "tags=${TAGS}" >> $GITHUB_OUTPUT
+          echo "base_image=${BASE_IMAGE}" >> $GITHUB_OUTPUT
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: Dockerfile
           push: true
-          tags: |
-            ghcr.io/sirozha1337/faster-auto-subtitle:latest
-            ghcr.io/sirozha1337/faster-auto-subtitle:${{ github.ref_name }}
+          build-args: |
+            BASE_IMAGE=${{ steps.meta.outputs.base_image }}
+          tags: ${{ steps.meta.outputs.tags }}
+
+

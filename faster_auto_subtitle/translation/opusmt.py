@@ -226,10 +226,12 @@ class OpusMT:
             return
 
         logger.info('Loading a list of available language models from OPUS-MT')
-        model_list = list_models(author=NLP_ROOT, model_name='opus-mt', tags=['marian'], sort='last_modified')
+        model_list = list_models(author=NLP_ROOT, search='opus-mt', filter=['marian'], sort='last_modified')
+
+        restricted_prefixes = [f'{NLP_ROOT}/opus-mt-tc', f'{NLP_ROOT}/opus-mt-synthetic', f'{NLP_ROOT}/opus-mt_tiny']
 
         suffix = [x.modelId.split("/")[1] for x in model_list
-                  if x.modelId.startswith(f'{NLP_ROOT}/opus-mt') and 'tc' not in x.modelId]
+                  if x.modelId.startswith(f'{NLP_ROOT}/opus-mt') and not any(x.modelId.startswith(r) for r in restricted_prefixes)]
 
         models = [DownloadableModel(f"{NLP_ROOT}/{s}")
                   for s in suffix if s == s.lower()]
@@ -343,7 +345,7 @@ class DownloadableModel:
     @staticmethod
     def parse_languages(name: str) -> tuple[set, set]:
         parts = name.split('-')
-        if len(parts) > 5:
+        if len(parts) != 5:
             return set(), set()
 
         src, tgt = parts[3], parts[4]

@@ -16,7 +16,7 @@ def process(args: dict):
     language: str = args.pop("language")
     sample_interval: list = args.pop("sample_interval")
     target_language: str = args.pop("target_language")
-    translator_mode: str = args.pop("translator_mode", "easynmt")
+    translator_mode: str = args.pop("translator_mode", "opusmt")
     deep_translator_backend: str = args.pop("deep_translator_backend", "google")
     # Collect extra deep-translator kwargs if present
     deep_translator_kwargs = args.pop("deep_translator_kwargs", {})

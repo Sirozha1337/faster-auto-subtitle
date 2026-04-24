@@ -28,6 +28,22 @@ Remember to replace `/path/to/video.mp4` with the path to your video file and `/
 
 Also replace `/path/to/cache` with the host directory where you want to cache the Hugging Face models. This will speed up subsequent runs as it would not require downloading those models again.
 
+#### Tags
+
+If you're running the tool on CPU, you can use lighter `cpu` image, which doesn't require CUDA libraries and is significantly smaller than the others.
+
+To find out which version of CUDA is supported by your GPU, run the following command:
+
+    nvidia-smi
+
+See `CUDA Version` in the output.
+
+Choose version depending on your GPU:
+
+- `latest` - alias for `cuda12.6`
+- `cuda12.6` - videocards before 50xx
+- `cuda12.8` - videocards from 50xx series
+
 ### Python
 
 #### Requirements
@@ -88,11 +104,11 @@ You can also specify a folder with multiple videos, and it will process all of t
 The default setting (which selects the `small` model) works well for transcribing English. You can optionally use a
 bigger model for better results (especially with other languages).
 
-
 Available models: `tiny.en`, `tiny`, `base.en`, `base`, `small.en`, `small`, `medium.en`, `medium`, `large-v1`, `large-v2`, `large-v3`, `large`,
- `distil-large-v2`, `distil-medium.en`, `distil-small.en`, `distil-large-v3`, `distil-large-v3.5`, `large-v3-turbo`
+`distil-large-v2`, `distil-medium.en`, `distil-small.en`, `distil-large-v3`, `distil-large-v3.5`, `large-v3-turbo`
 
 **Note**:
+
 - `distil` models are supposed to be more accurate and performant but they support only English language output
 - `large-v3-turbo` model supports multiple languages and is a more performant and less accurate version of the `large-v3`
 - See HuggingFace model pages for more info: [distil](https://huggingface.co/distil-whisper/distil-large-v3), [turbo](https://huggingface.co/mobiuslabsgmbh/faster-whisper-large-v3-turbo)
@@ -114,6 +130,7 @@ This will require downloading the appropriate model. If direct translation is no
 from source to english and from english to source.
 
 When running with `--output_type video` or `--output_type all` be sure to set the `--subtitle_type`:
+
 - `hard` (default) will add the subtitles into the video stream (if you've chosen to translate, it will add both tracks with translated on the top)
 - `soft` will include both subtitle tracks into the video container
 
@@ -159,7 +176,6 @@ faster_auto_subtitle your_video.mp4 \
 - baidu
 
 For more, see the [deep-translator documentation](https://deep-translator.readthedocs.io/).
-
 
 ## Tips
 

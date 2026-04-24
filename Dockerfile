@@ -1,16 +1,14 @@
-FROM pytorch/pytorch:2.7.1-cuda12.6-cudnn9-runtime
+ARG BASE_IMAGE=pytorch/pytorch:2.11.0-cuda12.6-cudnn9-runtime
+FROM ${BASE_IMAGE}
 
 WORKDIR /app
 
-RUN apt-get update -y && apt-get install -y ffmpeg
-
-COPY requirements.txt requirements.txt
-
-RUN pip install -r requirements.txt
+RUN apt-get update -y && apt-get install -y ffmpeg && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY . .
 
-RUN pip install -e .
+RUN pip install --no-cache-dir --break-system-packages -e .
 
 # Map host directory to cache Whisper and Opus-MT models
 VOLUME /root/.cache/huggingface/hub
