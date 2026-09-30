@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    version="1.9.0",
+    version="1.10.0",
     name="faster_auto_subtitle",
     packages=find_packages(),
     py_modules=["faster_auto_subtitle"],
@@ -19,6 +19,7 @@ setup(
         'sentencepiece==0.2.1',
         'sacremoses==0.1.1',
         'deep-translator==1.11.4',
+        'av>=11,<19',
     ],
     description="Automatically generate and embed subtitles into your videos",
     entry_points={

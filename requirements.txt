@@ -10,5 +10,6 @@ huggingface_hub>=1.11.0
 sentencepiece>=0.2.1
 sacremoses>=0.1.1
 deep-translator>=1.11.4
+av>=11,<19
 # In case you need to translate from Thai to other languages
 # thai-segmenter>=0.4.2
