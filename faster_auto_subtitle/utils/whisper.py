@@ -3,6 +3,7 @@ from typing import Iterable
 from faster_whisper import WhisperModel
 from faster_whisper.transcribe import Segment, TranscriptionInfo
 from tqdm import tqdm
+from .hf import load_cached_first
 
 
 class WhisperAI:
@@ -40,7 +41,9 @@ class WhisperAI:
     """
 
     def __init__(self, model_args: dict, transcribe_args: dict):
-        self.model = WhisperModel(**model_args)
+        self.model = load_cached_first(
+            lambda: WhisperModel(**model_args),
+            f"Whisper model '{model_args.get('model_size_or_path')}'")
         self.transcribe_args = transcribe_args
         self.model_name = model_args.get("model_size_or_path", "")
 

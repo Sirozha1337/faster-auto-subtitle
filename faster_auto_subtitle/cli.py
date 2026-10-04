@@ -1,5 +1,7 @@
 import argparse
 from .utils.convert import str2bool, str2timeinterval
+from .utils.constants import LANGUAGE_CODES
+from .errors import SubtitleError
 from faster_whisper.utils import available_models
 import json
 
@@ -54,6 +56,7 @@ def main():
                               or X->Language translation ('translate')")
 
     parser.add_argument("--language", type=str, default="auto",
+                        choices=["auto"] + LANGUAGE_CODES, metavar="LANGUAGE",
                         help="What is the origin language of the video? \
                               If unset, it is detected automatically.")
 
@@ -82,11 +85,22 @@ def main():
     parser.add_argument("--deep_translator_kwargs", type=str, default="{}",
                         help="Extra kwargs for deep-translator backend as a JSON string (e.g. {\"api_key\": \"yourkey\"})")
 
+    parser.add_argument("--offline", action="store_true",
+                        help="Never contact Hugging Face or any other online service. \
+                              Models must already be cached by a previous run.")
+
     args = parser.parse_args().__dict__
     args["deep_translator_kwargs"] = json.loads(args["deep_translator_kwargs"])
 
+    if args["offline"] and args["translator_mode"] == "deep-translator" and args["target_language"] != "en":
+        parser.error("--translator_mode deep-translator uses an online translation service "
+                     "and can't be used with --offline. Use --translator_mode opusmt instead.")
+
     from .main import process
-    process(args)
+    try:
+        process(args)
+    except SubtitleError as exc:
+        parser.exit(1, f"error: {exc}\n")
 
 
 if __name__ == '__main__':

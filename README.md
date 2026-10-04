@@ -127,7 +127,18 @@ using [Opus-MT](https://github.com/Helsinki-NLP/Opus-MT) (by default) or [deep t
     faster_auto_subtitle /path/to/video.mp4 --target_language fr
 
 This will require downloading the appropriate model. If direct translation is not available it will attempt translation
-from source to english and from english to source.
+from source to english and from english to target. If no translation is possible, it fails before any transcription is done.
+
+### Network access
+
+Models are downloaded from Hugging Face on first use and loaded from the local cache afterwards, so once
+everything is downloaded a run makes no network requests (unless you use deep-translator, which is an online service).
+The list of available Opus-MT models is cached as well, and is only refreshed when it doesn't have a model for the
+requested languages.
+
+To guarantee that nothing is ever downloaded, add `--offline`. It fails with an error if a required model is not cached yet:
+
+    faster_auto_subtitle /path/to/video.mp4 --target_language fr --offline
 
 When running with `--output_type video` or `--output_type all` be sure to set the `--subtitle_type`:
 

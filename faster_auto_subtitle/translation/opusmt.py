@@ -1,3 +1,5 @@
+import os
+import json
 import time
 import logging
 import re
@@ -7,14 +9,18 @@ import numpy as np
 import tqdm
 import nltk
 import torch
-from huggingface_hub import list_models
+from huggingface_hub import list_models, snapshot_download
 from transformers import MarianMTModel, MarianTokenizer
 from faster_whisper.transcribe import Segment
 from .languages import to_alpha2_languages, to_alpha3_language
+from ..errors import ModelNotCachedError, TranslationUnavailableError
+from ..utils.hf import CACHE_DIR, is_offline, load_cached_first
 
 logger = logging.getLogger(__name__)
 
 NLP_ROOT = 'Helsinki-NLP'
+MODEL_LIST_CACHE = os.path.join(CACHE_DIR, 'opus_mt_models.json')
+NLTK_DATA_DIR = os.path.join(CACHE_DIR, 'nltk_data')
 
 
 class OpusMTWrapper:
@@ -31,11 +37,44 @@ class OpusMTWrapper:
         self.device = device
         self.translator = OpusMT()
 
+    def prepare(self, source_lang: str, target_lang: str) -> None:
+        """
+        Resolves the chain of models needed to translate source_lang -> target_lang and loads them.
+        Raises TranslationUnavailableError or ModelNotCachedError if the translation can't be done.
+        """
+        if source_lang == target_lang:
+            return
+        self.ensure_sentence_tokenizer()
+        self.translator.prepare_translation(source_lang, target_lang)
+
+    def check_target_language(self, target_lang: str) -> None:
+        """Fails early if no model translates into target_lang, before the source language is known."""
+        self.translator.check_target_language(target_lang)
+
+    @staticmethod
+    def ensure_sentence_tokenizer() -> None:
+        if NLTK_DATA_DIR not in nltk.data.path:
+            nltk.data.path.append(NLTK_DATA_DIR)
+        try:
+            nltk.data.find('tokenizers/punkt_tab')
+            return
+        except LookupError:
+            pass
+
+        if is_offline():
+            raise ModelNotCachedError(
+                "NLTK sentence tokenizer 'punkt_tab' is not downloaded and offline mode is on (--offline or HF_HUB_OFFLINE). "
+                "Run once without --offline to download it.")
+        if not nltk.download('punkt_tab', download_dir=NLTK_DATA_DIR, quiet=True):
+            raise ModelNotCachedError("Failed to download NLTK sentence tokenizer 'punkt_tab'.")
+
     def translate_segments(self, segments: list[Segment], source_lang: str, target_lang: str) -> Optional[list[Segment]]:
-        source_text = [segment.text for segment in segments]
-        translation_available = self.translator.prepare_translation(source_lang, target_lang)
-        if not translation_available:
+        if source_lang == target_lang:
+            logger.info('Subtitles are already in %s, skipping translation.', target_lang)
             return None
+
+        source_text = [segment.text for segment in segments]
+        self.prepare(source_lang, target_lang)
 
         translated_text = self.translate(source_text, target_lang, source_lang, show_progress_bar=True)
         translated_segments = []
@@ -181,11 +220,6 @@ class OpusMTWrapper:
         elif lang in ['ar', 'jp', 'ko', 'zh']:
             sentences = list(re.findall('[^!?。.]+[!?。.]*', text, flags=re.U))
         else:
-            try:
-                nltk.data.find('tokenizers/punkt_tab')
-            except LookupError:
-                nltk.download('punkt_tab')
-
             sentences = nltk.sent_tokenize(text)
 
         return sentences
@@ -196,6 +230,7 @@ class OpusMT:
         self.max_loaded_models: int = max_loaded_models
         self.max_length: Optional[int] = None
         self.available_models: Optional[dict[str, DownloadableModel]] = None
+        self.model_list_from_cache: bool = False
         self.prepared_translations: dict = {}
 
     def load_model(self, model_name: str) -> tuple:
@@ -204,8 +239,15 @@ class OpusMT:
             return self.models[model_name]['tokenizer'], self.models[model_name]['model']
 
         logger.info("Load model: %s", model_name)
-        tokenizer = MarianTokenizer.from_pretrained(model_name)
-        model = MarianMTModel.from_pretrained(model_name)
+        def load():
+            if is_offline():
+                # Without this check, a model missing from the cache makes MarianTokenizer
+                # fail with an unrelated TypeError instead of LocalEntryNotFoundError.
+                snapshot_download(model_name, local_files_only=True)
+            return (MarianTokenizer.from_pretrained(model_name),
+                    MarianMTModel.from_pretrained(model_name))
+
+        tokenizer, model = load_cached_first(load, f"Opus-MT model '{model_name}'")
         model.eval()
 
         if len(self.models) >= self.max_loaded_models:
@@ -221,17 +263,23 @@ class OpusMT:
             'tokenizer': tokenizer, 'model': model, 'last_loaded': time.time()}
         return tokenizer, model
 
-    def load_available_models(self) -> None:
-        if self.available_models is not None:
+    def load_available_models(self, refresh: bool = False) -> None:
+        """
+        Loads the list of OPUS-MT models from the local cache, fetching it from Hugging Face
+        only if there's no cached copy or `refresh` is set.
+        """
+        if self.available_models is not None and not refresh:
             return
 
-        logger.info('Loading a list of available language models from OPUS-MT')
-        model_list = list_models(author=NLP_ROOT, search='opus-mt', filter=['marian'], sort='last_modified')
-
-        restricted_prefixes = [f'{NLP_ROOT}/opus-mt-tc', f'{NLP_ROOT}/opus-mt-synthetic', f'{NLP_ROOT}/opus-mt_tiny']
-
-        suffix = [x.modelId.split("/")[1] for x in model_list
-                  if x.modelId.startswith(f'{NLP_ROOT}/opus-mt') and not any(x.modelId.startswith(r) for r in restricted_prefixes)]
+        suffix = None if refresh else self.read_cached_model_list()
+        self.model_list_from_cache = suffix is not None
+        if suffix is None:
+            if is_offline():
+                raise ModelNotCachedError(
+                    "The list of OPUS-MT models is not cached and offline mode is on (--offline or HF_HUB_OFFLINE). "
+                    "Run once without --offline to download it.")
+            suffix = self.fetch_model_list()
+            self.write_cached_model_list(suffix)
 
         models = [DownloadableModel(f"{NLP_ROOT}/{s}")
                   for s in suffix if s == s.lower()]
@@ -247,22 +295,87 @@ class OpusMT:
                         self.available_models[key] = model
 
     @staticmethod
+    def fetch_model_list() -> list[str]:
+        logger.info('Loading a list of available language models from OPUS-MT')
+        model_list = list_models(author=NLP_ROOT, search='opus-mt', filter=['marian'], sort='last_modified')
+
+        restricted_prefixes = [f'{NLP_ROOT}/opus-mt-tc', f'{NLP_ROOT}/opus-mt-synthetic', f'{NLP_ROOT}/opus-mt_tiny']
+
+        return [x.modelId.split("/")[1] for x in model_list
+                if x.modelId.startswith(f'{NLP_ROOT}/opus-mt') and not any(x.modelId.startswith(r) for r in restricted_prefixes)]
+
+    @staticmethod
+    def read_cached_model_list() -> Optional[list[str]]:
+        try:
+            with open(MODEL_LIST_CACHE, encoding='utf-8') as file:
+                return json.load(file)['models']
+        except (OSError, ValueError, KeyError):
+            return None
+
+    @staticmethod
+    def write_cached_model_list(models: list[str]) -> None:
+        try:
+            os.makedirs(os.path.dirname(MODEL_LIST_CACHE), exist_ok=True)
+            with open(MODEL_LIST_CACHE, 'w', encoding='utf-8') as file:
+                json.dump({'fetched_at': time.time(), 'models': models}, file)
+        except OSError as exc:
+            logger.warning('Could not cache the OPUS-MT model list: %s', exc)
+
+    def refresh_stale_model_list(self) -> bool:
+        """
+        Re-fetches the model list if it came from the cache, since a newer list may have the model
+        we're missing. This is the only case in which a cached list is refreshed.
+        """
+        if not self.model_list_from_cache or is_offline():
+            return False
+        logger.info('Not found in the cached list of OPUS-MT models, refreshing it.')
+        self.load_available_models(refresh=True)
+        return True
+
+    @staticmethod
     def make_translation_key(source_lang: str, target_lang: str) -> str:
         return f'{source_lang}-{target_lang}'
 
-    def prepare_translation(self, source_lang: str, target_lang: str) -> bool:
+    def check_target_language(self, target_lang: str) -> None:
         self.load_available_models()
 
+        def supported():
+            return any(key.endswith(f'-{target_lang}') for key in self.available_models)
+
+        if not supported() and not (self.refresh_stale_model_list() and supported()):
+            raise TranslationUnavailableError(
+                f"OPUS-MT has no model that translates into '{target_lang}'.")
+
+    def prepare_translation(self, source_lang: str, target_lang: str) -> None:
         translation_key = self.make_translation_key(source_lang, target_lang)
         if translation_key in self.prepared_translations:
-            return self.prepared_translations[translation_key]
+            return
 
+        self.load_available_models()
         translations = self.determine_required_translations(source_lang, target_lang)
+        if len(translations) == 0 and self.refresh_stale_model_list():
+            translations = self.determine_required_translations(source_lang, target_lang)
         if len(translations) == 0:
-            return False
+            raise TranslationUnavailableError(
+                f"OPUS-MT has no model to translate from '{source_lang}' to '{target_lang}', "
+                "either directly or through English.")
+
+        # Load (and download, if needed) every model in the chain now, so a missing
+        # model is reported before any transcription work is done.
+        for _, step_target_lang, key in translations:
+            model_data = self.available_models[key]
+            tokenizer, _ = self.load_model(model_data.name)
+            # The model name may list a language that the tokenizer has no target prefix for.
+            if model_data.multilanguage and self.target_language_prefix(tokenizer, step_target_lang) is None:
+                raise TranslationUnavailableError(
+                    f"OPUS-MT model '{model_data.name}' can't translate into '{step_target_lang}'.")
 
         self.prepared_translations[translation_key] = translations
-        return True
+
+    @staticmethod
+    def target_language_prefix(tokenizer, target_lang: str) -> Optional[str]:
+        alpha3 = to_alpha3_language(target_lang)
+        return next((x for x in tokenizer.supported_language_codes if alpha3 in x), None)
 
     def determine_required_translations(self, source_lang: str, target_lang: str) -> List[tuple]:
         if self.available_models is None:
@@ -312,9 +425,7 @@ class OpusMT:
 
             # MultiLanguage model requires prepending each line with target language
             if model_data.multilanguage:
-                alpha3 = to_alpha3_language(intermediate_target_language)
-                prefix = next(
-                    x for x in tokenizer.supported_language_codes if alpha3 in x)
+                prefix = self.target_language_prefix(tokenizer, intermediate_target_language)
                 intermediate = [f'{prefix} {x}' for x in intermediate]
 
             inputs = tokenizer(intermediate, truncation=True, padding=True,

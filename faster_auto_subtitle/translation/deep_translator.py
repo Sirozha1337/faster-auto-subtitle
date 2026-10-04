@@ -30,6 +30,9 @@ class DeepTranslatorWrapper:
         self.kwargs = kwargs
         self.translator = None
 
+    def prepare(self, source_lang: str, target_lang: str) -> None:
+        """Nothing to prepare: the remote service is only contacted during translation."""
+
     def translate_segments(self, segments: list[Segment], source_lang: str, target_lang: str) -> Optional[list[Segment]]:
         if self.translator_class is None or not callable(self.translator_class):
             raise ImportError("deep-translator is not installed or the selected mode is unavailable.")

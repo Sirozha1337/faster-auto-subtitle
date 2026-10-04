@@ -7,6 +7,8 @@ from .utils.files import filename, write_srt
 from .utils.ffmpeg import get_audio, add_subtitles, preprocess_audio, file_has_audio
 from .utils.whisper import WhisperAI
 from .utils.constants import LANGUAGE_CODES
+from .utils.hf import set_offline
+from .errors import SubtitleError
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +22,8 @@ def process(args: dict):
     deep_translator_backend: str = args.pop("deep_translator_backend", "google")
     # Collect extra deep-translator kwargs if present
     deep_translator_kwargs = args.pop("deep_translator_kwargs", {})
+    if args.pop("offline", False):
+        set_offline()
 
     logging.basicConfig(encoding='utf-8', level=logging.INFO)
 
@@ -50,7 +54,6 @@ def process(args: dict):
         "device": args.pop("device"),
         "compute_type": args.pop("compute_type")
     }
-    transcribe_model = WhisperAI(model_args, args)
     translate_model = None
     if target_language != 'en':
         supported_languages = LANGUAGE_CODES
@@ -62,6 +65,16 @@ def process(args: dict):
             from .translation.opusmt import OpusMTWrapper
             translate_model = OpusMTWrapper(device=model_args['device'])
         assert target_language in supported_languages, f"Target language '{target_language}' not supported. Use one of: {', '.join(supported_languages)}"
+
+        # Fail before loading Whisper if the translation can't be done.
+        # distil models always produce English, whatever the source language.
+        source_language = 'en' if 'distil' in model_name else language
+        if source_language != 'auto':
+            translate_model.prepare(source_language, target_language)
+        elif translator_mode == 'opusmt':
+            translate_model.check_target_language(target_language)
+
+    transcribe_model = WhisperAI(model_args, args)
 
     os.makedirs(output_args["output_dir"], exist_ok=True)
     for path_to_process in paths_to_process:
@@ -97,8 +110,12 @@ def process_file(audio_channel, language, output_args, sample_interval, target_l
     else:
         audio = get_audio(file_name, audio_channel, sample_interval)
 
-    transcribed, translated = perform_task(file_name, audio, language, target_language,
-                                           transcribe_model, translate_model)
+    try:
+        transcribed, translated = perform_task(file_name, audio, language, target_language,
+                                               transcribe_model, translate_model)
+    except SubtitleError as exc:
+        logger.error("Skipping %s: %s", file_name, exc)
+        return
     save_result(file_name, transcribed, translated, sample_interval, output_args)
 
 
@@ -124,6 +141,9 @@ def perform_task(video: str, audio: str, language: str, target_language: str,
     translated = None
 
     if target_language != 'en' and translate_model is not None:
+        # Segments are generated lazily, so with the language detected we can fail here
+        # before any transcription is done.
+        translate_model.prepare(transcribed.language or language, target_language)
         translated = translate_subtitles(
             transcribed, language, target_language, translate_model)
 
